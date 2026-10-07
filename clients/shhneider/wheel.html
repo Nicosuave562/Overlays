@@ -1488,11 +1488,19 @@ function ovMerge(d){
 function ovLoad(){
   try{const r=localStorage.getItem(OV_KEY); if(r)OV=ovMerge(JSON.parse(r));}catch(e){}
 }
-function ovSave(){
+/* quiet=true saves and broadcasts without redrawing the panel. Typing in a box
+   or dragging in the colour picker fires constantly, and a redraw would destroy
+   the very control being used - which is why the picker would not stick. */
+function ovSave(quiet){
   OV.rev=(OV.rev||0)+1;
   try{localStorage.setItem(OV_KEY,JSON.stringify(OV));}catch(e){}
   try{ if(OV_CH) OV_CH.postMessage({rev:OV.rev}); }catch(e){}
-  ovRender();
+  if(!quiet) ovRender();
+}
+/* never redraw the bar editor while one of its own fields has focus */
+function ovEditing(){
+  const w=$('#ovBars');
+  return !!(w && document.activeElement && w.contains(document.activeElement));
 }
 function ovPull(){
   let d; try{const r=localStorage.getItem(OV_KEY); if(!r)return; d=JSON.parse(r);}catch(e){return;}
@@ -1507,7 +1515,7 @@ function ovNote(m){const el=$('#ovNote'); if(!el)return; el.textContent=m;
   clearTimeout(ovNote._t); ovNote._t=setTimeout(()=>{el.textContent='';},2400);}
 
 function ovRenderBars(){
-  const w=$('#ovBars'); if(!w) return;
+  const w=$('#ovBars'); if(!w || ovEditing()) return;
   w.innerHTML='';
   OV.bars.forEach((b,i)=>{
     const r=document.createElement('div'); r.className='ov-bar';
@@ -1521,12 +1529,12 @@ function ovRenderBars(){
     const q=c=>r.querySelector(c);
     q('.lb').value=b.label; q('.sw').value=b.color; q('.cur').value=b.cur; q('.goal').value=b.goal;
     q('.amt').value=b.step||'';
-    q('.lb').oninput=()=>{b.label=q('.lb').value;ovSave();};
-    q('.sw').oninput=()=>{b.color=q('.sw').value;ovSave();};
-    q('.cur').oninput=()=>{b.cur=+q('.cur').value||0;ovSave();};
-    q('.goal').oninput=()=>{b.goal=+q('.goal').value||0;ovSave();};
-    q('.amt').oninput=()=>{b.step=q('.amt').value;ovSave();};
-    const bump=n=>{b.cur=Math.max(0,(+b.cur||0)+n);ovSave();};
+    q('.lb').oninput=()=>{b.label=q('.lb').value;ovSave(true);};
+    q('.sw').oninput=()=>{b.color=q('.sw').value;ovSave(true);};
+    q('.cur').oninput=()=>{b.cur=+q('.cur').value||0;ovSave(true);};
+    q('.goal').oninput=()=>{b.goal=+q('.goal').value||0;ovSave(true);};
+    q('.amt').oninput=()=>{b.step=q('.amt').value;ovSave(true);};
+    const bump=n=>{b.cur=Math.max(0,(+b.cur||0)+n);q('.cur').value=b.cur;ovSave(true);};
     q('.m1').onclick=()=>bump(-1); q('.p1').onclick=()=>bump(1); q('.p5').onclick=()=>bump(5);
     const step=()=>{const v=parseFloat(q('.amt').value);return isFinite(v)?v:0;};
     q('.add').onclick=()=>{const v=step(); v?bump(v):q('.amt').focus();};
@@ -1534,6 +1542,19 @@ function ovRenderBars(){
     q('.rm').onclick=()=>{ if(OV.bars.length<2){ovNote('Keep at least one bar');return;} OV.bars.splice(i,1); ovSave(); };
     w.appendChild(r);
   });
+}
+/* just the live readouts, safe to run every second */
+function ovTick(){
+  if(!$('#ovCdState')) return;
+  if(OV.cd.mode==='up'){
+    const e=ovUpElapsed(), h=Math.floor(e/3600000), m=Math.floor(e%3600000/60000);
+    $('#ovCdState').textContent=(OV.cd.running?'Running ':'Paused at ')+h+'h '+m+'m'
+      +(OV.cd.goalH?' of '+OV.cd.goalH+'h':'');
+  }else{
+    const ms=OV.cd.endsAt-Date.now();
+    $('#ovCdState').textContent=!OV.cd.endsAt?'Not running'
+      :ms<=0?'Finished':'Running, '+Math.ceil(ms/60000)+' min left';
+  }
 }
 function ovRender(){
   if(!$('#ovBars')) return;
@@ -1580,15 +1601,15 @@ function ovWire(){
     const id=OV.bars.reduce((m,b)=>Math.max(m,b.id||0),0)+1;
     OV.bars.push({id,label:'New goal',cur:0,goal:100,color:'#29E6FF'}); ovSave();
   };
-  $('#ovCdLabel').oninput=e=>{OV.cd.label=e.target.value;ovSave();};
-  $('#ovCdMin').oninput=e=>{OV.cd.min=Math.max(1,Math.min(600,+e.target.value||1));ovSave();};
-  $('#ovCdDone').oninput=e=>{OV.cd.done=e.target.value;ovSave();};
+  $('#ovCdLabel').oninput=e=>{OV.cd.label=e.target.value;ovSave(true);};
+  $('#ovCdMin').oninput=e=>{OV.cd.min=Math.max(1,Math.min(600,+e.target.value||1));ovSave(true);};
+  $('#ovCdDone').oninput=e=>{OV.cd.done=e.target.value;ovSave(true);};
   $('#ovCdStart').onclick=()=>{OV.cd.endsAt=Date.now()+OV.cd.min*60000;ovSave();ovNote('Countdown started');};
   $('#ovCdPlus').onclick=()=>{OV.cd.endsAt=(OV.cd.endsAt&&OV.cd.endsAt>Date.now()?OV.cd.endsAt:Date.now())+60000;ovSave();};
   $('#ovCdStop').onclick=()=>{OV.cd.endsAt=0;ovSave();};
   $('#ovCdMode').onchange=e=>{OV.cd.mode=e.target.value;ovSave();};
-  $('#ovCdGoalH').oninput=e=>{OV.cd.goalH=Math.max(0,Math.min(168,+e.target.value||0));ovSave();};
-  $('#ovCdDone2').oninput=e=>{OV.cd.done=e.target.value;ovSave();};
+  $('#ovCdGoalH').oninput=e=>{OV.cd.goalH=Math.max(0,Math.min(168,+e.target.value||0));ovSave(true);};
+  $('#ovCdDone2').oninput=e=>{OV.cd.done=e.target.value;ovSave(true);};
   $('#ovCdUpGo').onclick=()=>{ if(!OV.cd.running){OV.cd.upStart=Date.now();OV.cd.running=true;} ovSave(); };
   $('#ovCdUpPause').onclick=()=>{
     if(OV.cd.running){ OV.cd.upAcc=ovUpElapsed(); OV.cd.running=false; OV.cd.upStart=0; }
@@ -1596,13 +1617,13 @@ function ovWire(){
     ovSave();
   };
   $('#ovCdUpReset').onclick=()=>{OV.cd.upAcc=0;OV.cd.upStart=0;OV.cd.running=false;ovSave();};
-  $('#ovRecLabel').oninput=e=>{OV.rec.label=e.target.value;ovSave();};
+  $('#ovRecLabel').oninput=e=>{OV.rec.label=e.target.value;ovSave(true);};
   $('#ovW').onclick=()=>{OV.rec.hist.push('w');ovSave();};
   $('#ovL').onclick=()=>{OV.rec.hist.push('l');ovSave();};
   $('#ovT').onclick=()=>{OV.rec.hist.push('t');OV.rec.ties=true;ovSave();};
   $('#ovUndo').onclick=()=>{OV.rec.hist.pop();ovSave();};
   $('#ovClear').onclick=()=>{OV.rec.hist=[];ovSave();};
-  $('#ovUrl').oninput=e=>{OV.url=e.target.value;ovSave();};
+  $('#ovUrl').oninput=e=>{OV.url=e.target.value;ovSave(true);};
   $('#ovLinkBars').onclick=()=>ovCopy('bars');
   $('#ovLinkCd').onclick=()=>ovCopy('cd');
   $('#ovLinkRec').onclick=()=>ovCopy('rec');
@@ -1615,7 +1636,7 @@ function ovWire(){
   if(OV_CH) OV_CH.onmessage=()=>ovPull();
   addEventListener('storage',e=>{ if(e.key===OV_KEY) ovPull(); });
   setInterval(ovPull,1500);
-  setInterval(ovRender,1000);   // keeps the countdown readout honest
+  setInterval(ovTick,1000);     // countdown readout only, never the editor
 }
 
 /* ============ layout ============ */
