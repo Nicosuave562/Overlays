@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overlay Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#0e1013; --panel:#171a20; --ink:#e9edf3; --muted:#8e98a8;
+  --line:#272c35; --accent:#29e6ff; --accent-ink:#06151a;
+  --win:#39d98a; --loss:#ff4d5e; --tie:#9aa5b4;
+  --shadow:0 12px 34px rgba(0,0,0,.45);
+}
+:root[data-light="1"]{
+  --bg:#f3f5f8; --panel:#fff; --ink:#131720; --muted:#5c6675;
+  --line:#dfe4ec; --shadow:0 12px 30px rgba(16,22,32,.13);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg)}
+html.clear,body.clear{background:transparent}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Oswald',"Helvetica Neue",Arial,system-ui,sans-serif;
+  display:grid;gap:18px;grid-template-columns:minmax(0,1fr) 340px;
+  grid-template-areas:"stage panel";padding:16px 18px 30px;min-height:100%;
+}
+@media(max-width:1060px){body{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "panel"}}
+
+/* ---------- stage ---------- */
+.stage{grid-area:stage;display:flex;flex-direction:column;align-items:center;gap:16px;min-width:0}
+.brand{text-align:center;display:flex;flex-direction:column;gap:2px}
+#bName{margin:0;font-size:clamp(19px,4vw,28px);font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+#bTag{margin:0;color:var(--muted);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase}
+.modules{display:flex;flex-direction:column;gap:18px;width:100%;max-width:720px}
+.mod{display:none}
+.mod.on{display:block}
+
+/* ---------- goal bars ---------- */
+.bars{display:flex;flex-direction:column;gap:13px}
+.bar{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:12px 15px 14px;box-shadow:var(--shadow);
+}
+body.live .bar{box-shadow:0 6px 22px rgba(0,0,0,.5)}
+.bar-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.bar-top h3{margin:0;font-size:14.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.bar-top .nums{font-size:14px;color:var(--muted);letter-spacing:.06em;white-space:nowrap}
+.bar-top .nums b{color:var(--ink);font-size:19px;font-weight:700}
+.track{position:relative;height:17px;border-radius:999px;background:rgba(127,140,160,.2);overflow:hidden}
+.fill{
+  position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;
+  transition:width .55s cubic-bezier(.2,.8,.25,1);
+}
+.fill::after{
+  content:'';position:absolute;inset:0;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,255,255,.26),rgba(255,255,255,0) 55%);
+}
+.bar-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted);letter-spacing:.09em;text-transform:uppercase}
+.bar.hit .bar-foot .left{color:var(--c)}
+
+/* ---------- countdown ---------- */
+.cd{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:20px 18px 22px;box-shadow:var(--shadow);text-align:center;
+}
+.cd h3{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
+#cdTime{
+  font-size:clamp(44px,12vw,92px);font-weight:700;line-height:1;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;color:var(--accent);
+}
+#cdSub{margin:8px 0 0;font-size:12.5px;color:var(--muted);letter-spacing:.13em;text-transform:uppercase}
+.cd.done #cdTime{font-size:clamp(30px,8vw,60px)}
+
+/* ---------- record ---------- */
+.rec{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px 18px;box-shadow:var(--shadow);
+}
+.rec h3{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);text-align:center}
+.tally{display:flex;justify-content:center;align-items:flex-end;gap:clamp(14px,5vw,40px)}
+.tally div{text-align:center;min-width:62px}
+.tally b{display:block;font-size:clamp(34px,9vw,60px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.tally span{font-size:11.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
+.tally .w b{color:var(--win)} .tally .l b{color:var(--loss)} .tally .t b{color:var(--tie)}
+.recfoot{display:flex;justify-content:center;gap:18px;margin-top:12px;font-size:12px;color:var(--muted);letter-spacing:.11em;text-transform:uppercase}
+.recfoot b{color:var(--ink)}
+.dots{display:flex;justify-content:center;gap:5px;margin-top:11px;flex-wrap:wrap}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--tie)}
+.dot.w{background:var(--win)} .dot.l{background:var(--loss)}
+
+/* ---------- panel ---------- */
+.panel{grid-area:panel;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pan{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.pan>h2{margin:0;padding:11px 14px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.pan>h2 input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.pan .body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.lab{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+input[type=text],input[type=number],select{
+  width:100%;background:transparent;border:1px solid var(--line);border-radius:9px;color:var(--ink);
+  font-family:inherit;font-size:14px;padding:8px 10px;
+}
+input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-radius:9px;background:transparent;cursor:pointer;padding:3px}
+.row{display:flex;gap:7px}
+.row>*{flex:1;min-width:0}
+.opt{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+.opt input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+button.b{
+  background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  padding:8px 10px;cursor:pointer;font-family:inherit;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+}
+button.b:hover{color:var(--ink);border-color:var(--muted)}
+button.b.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.barrow{border:1px solid var(--line);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:7px}
+.barrow .hd{display:flex;gap:7px;align-items:center}
+.barrow .hd input[type=text]{flex:1}
+.barrow .hd input[type=color]{width:34px;flex:none;padding:2px}
+.note{font-size:11.5px;color:var(--accent);min-height:15px}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+
+/* ---------- overlay mode ---------- */
+body.live{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage";padding:18px}
+body.live .panel{display:none}
+body.live .modules{max-width:860px}
+body.live #exit{display:inline-block}
+#exit{
+  display:none;position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:50;
+  background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:9px;
+  padding:7px 12px;font-family:inherit;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;
+}
+body.solo .brand{display:none}
+</style>
+</head>
+<body>
+
+<button id="exit">Exit overlay</button>
+
+<section class="stage">
+  <div class="brand">
+    <h1 id="bName">Your Channel</h1>
+    <p id="bTag">Live now</p>
+  </div>
+
+  <div class="modules">
+    <div class="mod" id="modBars"><div class="bars" id="bars"></div></div>
+
+    <div class="mod" id="modCd">
+      <div class="cd" id="cd">
+        <h3 id="cdLabel">Starting soon</h3>
+        <div id="cdTime">00:00</div>
+        <p id="cdSub"></p>
+      </div>
+    </div>
+
+    <div class="mod" id="modRec">
+      <div class="rec">
+        <h3 id="recLabel">Season record</h3>
+        <div class="tally">
+          <div class="w"><b id="recW">0</b><span>Won</span></div>
+          <div class="l"><b id="recL">0</b><span>Lost</span></div>
+          <div class="t" id="recTieBox"><b id="recT">0</b><span>Tied</span></div>
+        </div>
+        <div class="recfoot">
+          <span>Win rate <b id="recPct">—</b></span>
+          <span id="recStreakWrap">Streak <b id="recStreak">—</b></span>
+        </div>
+        <div class="dots" id="recDots"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<aside class="panel">
+  <div class="pan">
+    <h2>Branding</h2>
+    <div class="body">
+      <div><p class="lab">Channel name</p><input type="text" id="iName" maxlength="28"></div>
+      <div><p class="lab">Tagline</p><input type="text" id="iTag" maxlength="36"></div>
+      <div><p class="lab">Accent colour</p><input type="color" id="iAccent"></div>
+      <label class="opt"><input type="checkbox" id="iLight"> Light background</label>
+    </div>
+  </div>
+
+  <div class="pan">
+    <h2>Goal bars <input type="checkbox" id="onBars"></h2>
+    <div class="body">
+      <div id="barEditor" style="display:flex;flex-direction:column;gap:9px"></div>
+      <div class="row"><button class="b" id="addBar">Add a bar</button></div>
+      <label class="opt"><input type="checkbox" id="barRemain"> Show "x to go" instead of the target</label>
+    </div>
+  </div>
+
+  <div class="pan">
+    <h2>Countdown <input type="checkbox" id="onCd"></h2>
+    <div class="body">
+      <div><p class="lab">Label</p><input type="text" id="cdLab" maxlength="30"></div>
+      <div><p class="lab">Direction</p>
+        <select id="cdMode">
+          <option value="down">Counts down to zero</option>
+          <option value="up">Counts up &mdash; stream elapsed</option>
+        </select>
+      </div>
+      <div class="row" id="cdDownRow">
+        <div><p class="lab">Minutes</p><input type="number" id="cdMin" min="1" max="600" step="1"></div>
+        <div><p class="lab">When it hits zero</p><input type="text" id="cdDone" maxlength="24"></div>
+      </div>
+      <div class="row" id="cdUpRow">
+        <div><p class="lab">Target hours (0 = none)</p><input type="number" id="cdGoalH" min="0" max="168" step="1"></div>
+        <div><p class="lab">At the target</p><input type="text" id="cdDone2" maxlength="24"></div>
+      </div>
+      <div class="row" id="cdDownBtns">
+        <button class="b go" id="cdStart">Start</button>
+        <button class="b" id="cdPlus">+1 min</button>
+        <button class="b" id="cdStop">Reset</button>
+      </div>
+      <div class="row" id="cdUpBtns">
+        <button class="b go" id="cdUpGo">Start</button>
+        <button class="b" id="cdUpPause">Pause</button>
+        <button class="b" id="cdUpReset">Reset</button>
+      </div>
+      <p class="hint">Times are stored as timestamps, so the clock stays right if OBS reloads the source. Pausing banks the elapsed time, so breaks do not count.</p>
+    </div>
+  </div>
+
+  <div class="pan">
+    <h2>Record <input type="checkbox" id="onRec"></h2>
+    <div class="body">
+      <div><p class="lab">Label</p><input type="text" id="recLab" maxlength="30"></div>
+      <div class="row">
+        <button class="b" id="addW">+ Win</button>
+        <button class="b" id="addL">+ Loss</button>
+        <button class="b" id="addT">+ Tie</button>
+      </div>
+      <div class="row">
+        <button class="b" id="undo">Undo last</button>
+        <button class="b" id="clearRec">Reset record</button>
+      </div>
+      <label class="opt"><input type="checkbox" id="recShowTies"> Show ties</label>
+      <label class="opt"><input type="checkbox" id="recShowDots"> Show recent form dots</label>
+    </div>
+  </div>
+
+  <div class="pan">
+    <h2>Output</h2>
+    <div class="body">
+      <label class="opt"><input type="checkbox" id="iClear"> Transparent background (OBS only)</label>
+      <div><p class="lab">OBS link shows</p>
+        <select id="onlySel">
+          <option value="">Everything that is switched on</option>
+          <option value="bars">Goal bars only</option>
+          <option value="cd">Countdown only</option>
+          <option value="rec">Record only</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="b go" id="goLive">Overlay mode</button>
+        <button class="b" id="copyLink">Copy OBS link</button>
+      </div>
+      <div class="row">
+        <button class="b" id="expCfg">Export</button>
+        <label class="b" for="impCfg" style="text-align:center">Import</label>
+        <input type="file" id="impCfg" accept="application/json" hidden>
+      </div>
+      <p class="note" id="note"></p>
+      <p class="hint" id="syncState"></p>
+      <p class="hint">Each module can be its own browser source &mdash; pick one above, copy the link, and it loads on its own. Changes here reach them live, as long as every source points at the same hosted URL rather than a local file.</p>
+    </div>
+  </div>
+</aside>
+
+<script>
+/* ============================================================
+   Overlay Kit — goal bars, countdown, record board.
+   Same shell as the wheel: config-driven, nothing channel-specific
+   in the code, exports its whole setup as JSON.
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const DEF={
+  brand:'Your Channel',tag:'Live now',accent:'#29e6ff',light:false,clear:false,live:false,only:'',
+  bars:[
+    {id:1,label:'Sub goal',cur:34,goal:50,color:'#29e6ff'},
+    {id:2,label:'Donation goal',cur:120,goal:400,color:'#ff52e5'}
+  ],
+  barRemain:false,
+  cd:{label:'Starting soon',min:10,done:'We are live',endsAt:0,
+      mode:'down',upStart:0,upAcc:0,running:false,goalH:0},
+  rec:{label:'Season record',hist:[],ties:false,dots:true},
+  on:{bars:true,cd:true,rec:true}
+};
+let S=JSON.parse(JSON.stringify(DEF));
+
+/* ---------- helpers ---------- */
+function hexRgb(h){h=(h||'#000').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16,(n>>8)&255,n&255];}
+function lum(h){const[r,g,b]=hexRgb(h);return(0.299*r+0.587*g+0.114*b)/255;}
+function ink(h){return lum(h)>0.58?'#10131a':'#ffffff';}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function fmtNum(n){return (Math.round(n*100)/100).toLocaleString();}
+
+/* ---------- persistence + live sync ----------
+   Every copy of this page on the same origin shares one saved build. The control
+   page bumps a revision on each change and pings the others, so separate OBS
+   browser sources update in place instead of needing a reload.
+   Three routes, because none is available everywhere:
+     BroadcastChannel  - instant, same origin
+     storage event     - fires in other contexts of the same origin
+     a slow poll       - catches anything the first two miss
+   All of them need the page served from a URL. OBS "Local File" gives every
+   source its own opaque file:// origin, so nothing is shared and sync is off. */
+/* One line per client build. Two builds on the same host would otherwise share
+   one saved setup and overwrite each other - change this for every channel. */
+const BUILD_ID=(function(){
+  // #id=<channel> pairs this source with that channel's hub. One hosted file
+  // serves everyone; without it, it falls back to its own demo store.
+  const m=/[#,]id=([A-Za-z0-9_.-]+)/.exec(location.hash||'');
+  return m?m[1]:'demo';
+})();
+const KEY='overlaykit:'+BUILD_ID;
+const CH=(()=>{try{return new BroadcastChannel(KEY);}catch(e){return null;}})();
+let applying=false;
+const VIEW={};                       // per-source settings from the URL, never overwritten
+
+function save(){
+  if(applying) return;
+  S.rev=(S.rev||0)+1;
+  try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  try{ if(CH) CH.postMessage({rev:S.rev}); }catch(e){}
+}
+function merge(d){
+  const out=Object.assign(JSON.parse(JSON.stringify(DEF)),d);
+  out.cd=Object.assign({},DEF.cd,d.cd||{});
+  out.rec=Object.assign({},DEF.rec,d.rec||{});
+  out.on=Object.assign({},DEF.on,d.on||{});
+  if(!Array.isArray(out.bars)||!out.bars.length)out.bars=JSON.parse(JSON.stringify(DEF.bars));
+  return out;
+}
+function applyView(){
+  if(VIEW.live!==undefined)S.live=VIEW.live;
+  if(VIEW.clear!==undefined)S.clear=VIEW.clear;
+  if(VIEW.only!==undefined)S.only=VIEW.only;
+}
+function pull(){
+  let d;
+  try{const r=localStorage.getItem(KEY); if(!r)return; d=JSON.parse(r);}catch(e){return;}
+  if(!d||(d.rev||0)<=(S.rev||0))return;      // nothing newer than what we already show
+  applying=true;
+  S=merge(d); applyView();
+  sync();
+  applying=false;
+}
+function load(){
+  try{const r=localStorage.getItem(KEY); if(r)S=merge(JSON.parse(r));}catch(e){}
+  const h=(location.hash||'').toLowerCase();
+  if(h.includes('stream'))VIEW.live=true;
+  if(h.includes('clear'))VIEW.clear=true;
+  const m=/only=(bars|cd|rec)/.exec(h);
+  if(m)VIEW.only=m[1];
+  applyView();
+  if(CH) CH.onmessage=()=>pull();
+  addEventListener('storage',e=>{ if(e.key===KEY) pull(); });
+  setInterval(pull,1500);
+}
+function syncStatus(){
+  const file=location.protocol==='file:';
+  const el=$('#syncState');
+  if(!el) return;
+  el.textContent=file
+    ? 'Live sync off \u2014 opened as a local file'
+    : 'Live sync on \u2014 other sources follow this page';
+  el.style.color=file?'var(--muted)':'var(--accent)';
+}
+function note(m){$('#note').textContent=m;clearTimeout(note._t);note._t=setTimeout(()=>{$('#note').textContent='';},2200);}
+
+/* ---------- goal bars ---------- */
+function renderBars(){
+  const w=$('#bars');w.innerHTML='';
+  S.bars.forEach(b=>{
+    const pct=b.goal>0?clamp(b.cur/b.goal,0,1):0;
+    const hit=b.goal>0&&b.cur>=b.goal;
+    const el=document.createElement('div');
+    el.className='bar'+(hit?' hit':'');
+    el.style.setProperty('--c',b.color);
+    const left=S.barRemain&&!hit?fmtNum(Math.max(0,b.goal-b.cur))+' to go':'of '+fmtNum(b.goal);
+    el.innerHTML=
+      '<div class="bar-top"><h3></h3><span class="nums"><b></b> <span class="of"></span></span></div>'+
+      '<div class="track"><div class="fill"></div></div>'+
+      '<div class="bar-foot"><span class="left"></span><span class="pc"></span></div>';
+    el.querySelector('h3').textContent=b.label;
+    el.querySelector('.nums b').textContent=fmtNum(b.cur);
+    el.querySelector('.of').textContent='of '+fmtNum(b.goal);
+    el.querySelector('.left').textContent=hit?'Goal reached':left;
+    el.querySelector('.pc').textContent=Math.round(pct*100)+'%';
+    const f=el.querySelector('.fill');
+    f.style.background=b.color;
+    requestAnimationFrame(()=>{f.style.width=(pct*100)+'%';});
+    w.appendChild(el);
+  });
+}
+function renderBarEditor(){
+  const w=$('#barEditor');w.innerHTML='';
+  S.bars.forEach((b,i)=>{
+    const r=document.createElement('div');r.className='barrow';
+    r.innerHTML='<div class="hd"><input type="text" maxlength="24"><input type="color"><button class="b x">&times;</button></div>'+
+      '<div class="row"><input type="number" class="cur" step="1"><input type="number" class="goal" step="1"></div>'+
+      '<div class="row"><button class="b m1">-1</button><button class="b p1">+1</button><button class="b p5">+5</button></div>'+
+      '<div class="row"><input type="number" class="amt" step="1" placeholder="Amount">'+
+      '<button class="b sub">Subtract</button><button class="b add go">Add</button></div>';
+    const [txt,col]=r.querySelectorAll('.hd input');
+    txt.value=b.label; col.value=b.color;
+    const cur=r.querySelector('.cur'),goal=r.querySelector('.goal');
+    cur.value=b.cur; goal.value=b.goal;
+    txt.oninput=()=>{b.label=txt.value;renderBars();save();};
+    col.oninput=()=>{b.color=col.value;renderBars();save();};
+    cur.oninput=()=>{b.cur=+cur.value||0;renderBars();save();};
+    goal.oninput=()=>{b.goal=+goal.value||0;renderBars();save();};
+    const bump=n=>{b.cur=Math.max(0,(+b.cur||0)+n);cur.value=b.cur;renderBars();save();};
+    r.querySelector('.m1').onclick=()=>bump(-1);
+    r.querySelector('.p1').onclick=()=>bump(1);
+    r.querySelector('.p5').onclick=()=>bump(5);
+    // custom step: type any amount and add or subtract it, decimals included for tip totals
+    const amt=r.querySelector('.amt');
+    amt.value=b.step||'';
+    const step=()=>{const v=parseFloat(amt.value);return isFinite(v)?v:0;};
+    amt.oninput=()=>{b.step=amt.value;save();};
+    amt.onkeydown=k=>{ if(k.key==='Enter'){k.preventDefault();bump(step());} };
+    r.querySelector('.add').onclick=()=>{const v=step();if(!v){amt.focus();return;}bump(v);};
+    r.querySelector('.sub').onclick=()=>{const v=step();if(!v){amt.focus();return;}bump(-v);};
+    r.querySelector('.x').onclick=()=>{
+      if(S.bars.length<2){note('Keep at least one bar');return;}
+      S.bars.splice(i,1);sync();
+    };
+    w.appendChild(r);
+  });
+}
+
+/* ---------- countdown ---------- */
+function hms(ms,always){
+  const t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;
+  return (h||always ? h+':'+String(m).padStart(2,'0') : String(m).padStart(2,'0'))+':'+String(s).padStart(2,'0');
+}
+/* Elapsed for a marathon: accumulated time plus the stretch currently running.
+   Pausing banks what has run so far, so breaks do not inflate the clock, and
+   the figure survives a reload because it is derived from timestamps. */
+function upElapsed(){
+  const c=S.cd;
+  return (c.upAcc||0)+(c.running&&c.upStart?Date.now()-c.upStart:0);
+}
+function cdTick(){
+  const el=$('#cdTime'),box=$('#cd'),c=S.cd;
+  if(c.mode==='up'){
+    const ms=upElapsed(), goal=(c.goalH||0)*3600000;
+    const hit=goal>0&&ms>=goal;
+    box.classList.toggle('done',hit&&!!c.done);
+    el.textContent=hit&&c.done?c.done:hms(ms,true);
+    $('#cdSub').textContent = goal>0
+      ? (hit?'Target reached':'of '+hms(goal,true)+'  \u00b7  '+Math.floor(ms/goal*100)+'%')
+      : (c.running?'Running':(ms?'Paused':'Not started'));
+    return;
+  }
+  if(!c.endsAt){
+    box.classList.remove('done');
+    el.textContent=String(c.min).padStart(2,'0')+':00';
+    $('#cdSub').textContent='Not started';
+    return;
+  }
+  const ms=c.endsAt-Date.now();
+  if(ms<=0){
+    box.classList.add('done');
+    el.textContent=c.done||'Live';
+    $('#cdSub').textContent='';
+    return;
+  }
+  box.classList.remove('done');
+  el.textContent=hms(ms);
+  $('#cdSub').textContent='Back at '+new Date(c.endsAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+}
+setInterval(cdTick,250);
+
+/* ---------- record ---------- */
+function renderRec(){
+  const h=S.rec.hist;
+  const w=h.filter(x=>x==='w').length,l=h.filter(x=>x==='l').length,t=h.filter(x=>x==='t').length;
+  $('#recLabel').textContent=S.rec.label;
+  $('#recW').textContent=w; $('#recL').textContent=l; $('#recT').textContent=t;
+  $('#recTieBox').style.display=S.rec.ties?'':'none';
+  const played=w+l+(S.rec.ties?t:0);
+  $('#recPct').textContent=played?Math.round((w/played)*100)+'%':'—';
+  // streak runs back from the most recent result
+  let st='—';
+  if(h.length){
+    const last=h[h.length-1];let n=0;
+    for(let i=h.length-1;i>=0&&h[i]===last;i--)n++;
+    st=n+(last==='w'?'W':last==='l'?'L':'T');
+  }
+  $('#recStreak').textContent=st;
+  const d=$('#recDots');d.style.display=S.rec.dots?'':'none';d.innerHTML='';
+  h.slice(-12).forEach(x=>{const o=document.createElement('span');o.className='dot '+x;d.appendChild(o);});
+}
+function addResult(x){S.rec.hist.push(x);if(S.rec.hist.length>200)S.rec.hist.shift();sync();}
+
+/* ---------- sync ---------- */
+function sync(){
+  document.documentElement.style.setProperty('--accent',S.accent);
+  document.documentElement.style.setProperty('--accent-ink',ink(S.accent));
+  document.documentElement.setAttribute('data-light',S.light?'1':'0');
+  document.body.classList.toggle('clear',S.clear);
+  document.documentElement.classList.toggle('clear',S.clear);
+  document.body.classList.toggle('live',S.live);
+  document.body.classList.toggle('solo',!!S.only);
+
+  $('#bName').textContent=S.brand||'Your Channel';
+  $('#bTag').textContent=S.tag||'';
+
+  const show=k=>S.only?S.only===k:S.on[k];
+  $('#modBars').className='mod'+(show('bars')?' on':'');
+  $('#modCd').className='mod'+(show('cd')?' on':'');
+  $('#modRec').className='mod'+(show('rec')?' on':'');
+
+  renderBars();renderBarEditor();renderRec();
+  $('#cdLabel').textContent=S.cd.label;cdTick();
+
+  $('#iName').value=S.brand;$('#iTag').value=S.tag;$('#iAccent').value=S.accent;
+  $('#iLight').checked=S.light;$('#iClear').checked=S.clear;
+  $('#onBars').checked=S.on.bars;$('#onCd').checked=S.on.cd;$('#onRec').checked=S.on.rec;
+  $('#barRemain').checked=S.barRemain;
+  const up=S.cd.mode==='up';
+  $('#cdMode').value=S.cd.mode||'down';
+  $('#cdDownRow').style.display=up?'none':'';
+  $('#cdDownBtns').style.display=up?'none':'';
+  $('#cdUpRow').style.display=up?'':'none';
+  $('#cdUpBtns').style.display=up?'':'none';
+  $('#cdUpPause').textContent=S.cd.running?'Pause':'Resume';
+  $('#cdLab').value=S.cd.label;$('#cdMin').value=S.cd.min;$('#cdDone').value=S.cd.done;
+  $('#cdGoalH').value=S.cd.goalH||0;$('#cdDone2').value=S.cd.done;
+  $('#recLab').value=S.rec.label;$('#recShowTies').checked=S.rec.ties;$('#recShowDots').checked=S.rec.dots;
+  $('#onlySel').value=S.only||'';
+  syncStatus();
+  save();
+}
+
+/* ---------- wiring ---------- */
+$('#iName').oninput=e=>{S.brand=e.target.value;sync();};
+$('#iTag').oninput=e=>{S.tag=e.target.value;sync();};
+$('#iAccent').oninput=e=>{S.accent=e.target.value;sync();};
+$('#iLight').onchange=e=>{S.light=e.target.checked;sync();};
+$('#iClear').onchange=e=>{S.clear=e.target.checked;sync();};
+$('#onBars').onchange=e=>{S.on.bars=e.target.checked;sync();};
+$('#onCd').onchange=e=>{S.on.cd=e.target.checked;sync();};
+$('#onRec').onchange=e=>{S.on.rec=e.target.checked;sync();};
+$('#barRemain').onchange=e=>{S.barRemain=e.target.checked;sync();};
+$('#addBar').onclick=()=>{
+  const id=S.bars.reduce((m,b)=>Math.max(m,b.id),0)+1;
+  S.bars.push({id,label:'New goal',cur:0,goal:100,color:S.accent});sync();
+};
+$('#cdLab').oninput=e=>{S.cd.label=e.target.value;sync();};
+$('#cdMin').oninput=e=>{S.cd.min=clamp(+e.target.value||1,1,600);cdTick();save();};
+$('#cdDone').oninput=e=>{S.cd.done=e.target.value;cdTick();save();};
+$('#cdStart').onclick=()=>{S.cd.endsAt=Date.now()+S.cd.min*60000;cdTick();save();note('Countdown started');};
+$('#cdPlus').onclick=()=>{
+  S.cd.endsAt=(S.cd.endsAt&&S.cd.endsAt>Date.now()?S.cd.endsAt:Date.now())+60000;cdTick();save();
+};
+$('#cdStop').onclick=()=>{S.cd.endsAt=0;cdTick();save();};
+$('#cdMode').onchange=e=>{S.cd.mode=e.target.value;sync();};
+$('#cdGoalH').oninput=e=>{S.cd.goalH=Math.max(0,Math.min(168,+e.target.value||0));cdTick();save();};
+$('#cdDone2').oninput=e=>{S.cd.done=e.target.value;cdTick();save();};
+$('#cdUpGo').onclick=()=>{
+  if(!S.cd.running){ S.cd.upStart=Date.now(); S.cd.running=true; }
+  sync();
+};
+$('#cdUpPause').onclick=()=>{
+  if(S.cd.running){ S.cd.upAcc=upElapsed(); S.cd.running=false; S.cd.upStart=0; }
+  else { S.cd.upStart=Date.now(); S.cd.running=true; }
+  sync();
+};
+$('#cdUpReset').onclick=()=>{S.cd.upAcc=0;S.cd.upStart=0;S.cd.running=false;sync();};
+$('#recLab').oninput=e=>{S.rec.label=e.target.value;sync();};
+$('#recShowTies').onchange=e=>{S.rec.ties=e.target.checked;sync();};
+$('#recShowDots').onchange=e=>{S.rec.dots=e.target.checked;sync();};
+$('#addW').onclick=()=>addResult('w');
+$('#addL').onclick=()=>addResult('l');
+$('#addT').onclick=()=>addResult('t');
+$('#undo').onclick=()=>{S.rec.hist.pop();sync();};
+$('#clearRec').onclick=()=>{S.rec.hist=[];sync();};
+$('#onlySel').onchange=e=>{S.only=e.target.value;sync();};
+$('#goLive').onclick=()=>{S.live=true;sync();};
+$('#exit').onclick=()=>{S.live=false;sync();};
+$('#copyLink').onclick=()=>{
+  const base=location.href.split('#')[0];
+  const url=base+'#stream'+(S.clear?',clear':'')+(S.only?',only='+S.only:'');
+  const done=()=>note('OBS link copied');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,()=>prompt('Copy this:',url));
+  else prompt('Copy this:',url);
+};
+$('#expCfg').onclick=()=>{
+  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download='overlay-build.json';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),1200);note('Build exported');
+};
+$('#impCfg').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const d=JSON.parse(r.result);
+    S=Object.assign(JSON.parse(JSON.stringify(DEF)),d);
+    S.cd=Object.assign({},DEF.cd,d.cd||{});
+    S.rec=Object.assign({},DEF.rec,d.rec||{});
+    S.on=Object.assign({},DEF.on,d.on||{});
+    note('Build imported');sync();
+  }catch(x){note('That file would not read');}};
+  r.readAsText(f);e.target.value='';
+};
+addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(e.key==='h'||e.key==='H'){S.live=!S.live;sync();}
+  if(e.key==='Escape'&&S.live){S.live=false;sync();}
+});
+
+load();sync();
+</script>
+</body>
+</html>
