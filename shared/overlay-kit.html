@@ -40,6 +40,17 @@ body{
 .modules{display:flex;flex-direction:column;gap:18px;width:100%;max-width:720px}
 .mod{display:none}
 .mod.on{display:block}
+/* Bare mode strips the card so the figures float over gameplay. The track on a
+   goal bar keeps its own fill so the bar is still readable. */
+body.bare .bar,body.bare .cd,body.bare .rec{
+  background:transparent;border-color:transparent;box-shadow:none;padding-left:0;padding-right:0;
+}
+body.bare .bar-top h3,body.bare .bar-top .nums b,body.bare #cdTime,
+body.bare .tally b,body.bare .tally span,body.bare .rec h3,body.bare .cd h3,
+body.bare #cdSub,body.bare .bar-foot,body.bare .recfoot{
+  text-shadow:0 2px 6px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9);
+}
+body.bare .track{background:rgba(0,0,0,.45)}
 
 /* ---------- goal bars ---------- */
 .bars{display:flex;flex-direction:column;gap:13px}
@@ -72,7 +83,7 @@ body.live .bar{box-shadow:0 6px 22px rgba(0,0,0,.5)}
 .cd h3{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
 #cdTime{
   font-size:clamp(44px,12vw,92px);font-weight:700;line-height:1;letter-spacing:.02em;
-  font-variant-numeric:tabular-nums;color:var(--accent);
+  font-variant-numeric:tabular-nums;color:var(--cdc,var(--accent));
 }
 #cdSub{margin:8px 0 0;font-size:12.5px;color:var(--muted);letter-spacing:.13em;text-transform:uppercase}
 .cd.done #cdTime{font-size:clamp(30px,8vw,60px)}
@@ -87,12 +98,13 @@ body.live .bar{box-shadow:0 6px 22px rgba(0,0,0,.5)}
 .tally div{text-align:center;min-width:62px}
 .tally b{display:block;font-size:clamp(34px,9vw,60px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .tally span{font-size:11.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
-.tally .w b{color:var(--win)} .tally .l b{color:var(--loss)} .tally .t b{color:var(--tie)}
+.tally .w b{color:var(--recw,var(--win))} .tally .l b{color:var(--recl,var(--loss))} .tally .t b{color:var(--rect,var(--tie))}
 .recfoot{display:flex;justify-content:center;gap:18px;margin-top:12px;font-size:12px;color:var(--muted);letter-spacing:.11em;text-transform:uppercase}
 .recfoot b{color:var(--ink)}
 .dots{display:flex;justify-content:center;gap:5px;margin-top:11px;flex-wrap:wrap}
 .dot{width:11px;height:11px;border-radius:50%;background:var(--tie)}
-.dot.w{background:var(--win)} .dot.l{background:var(--loss)}
+.dot{background:var(--rect,var(--tie))}
+.dot.w{background:var(--recw,var(--win))} .dot.l{background:var(--recl,var(--loss))}
 
 /* ---------- panel ---------- */
 .panel{grid-area:panel;display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -127,7 +139,7 @@ button.b.go{background:var(--accent);color:var(--accent-ink);border-color:var(--
 body.live{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage";padding:18px}
 body.live .panel{display:none}
 body.live .modules{max-width:860px}
-body.live #exit{display:inline-block}
+body.live.toggled #exit{display:inline-block}
 #exit{
   display:none;position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:50;
   background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:9px;
@@ -198,7 +210,10 @@ body.solo .brand{display:none}
   <div class="pan">
     <h2>Countdown <input type="checkbox" id="onCd"></h2>
     <div class="body">
-      <div><p class="lab">Label</p><input type="text" id="cdLab" maxlength="30"></div>
+      <div class="row">
+        <div style="flex:3"><p class="lab">Label</p><input type="text" id="cdLab" maxlength="30"></div>
+        <div style="flex:1"><p class="lab">Colour</p><input type="color" id="cdColor"></div>
+      </div>
       <div><p class="lab">Direction</p>
         <select id="cdMode">
           <option value="down">Counts down to zero</option>
@@ -232,6 +247,11 @@ body.solo .brand{display:none}
     <div class="body">
       <div><p class="lab">Label</p><input type="text" id="recLab" maxlength="30"></div>
       <div class="row">
+        <div><p class="lab">Won</p><input type="color" id="recWin"></div>
+        <div><p class="lab">Lost</p><input type="color" id="recLoss"></div>
+        <div><p class="lab">Tied</p><input type="color" id="recTie"></div>
+      </div>
+      <div class="row">
         <button class="b" id="addW">+ Win</button>
         <button class="b" id="addL">+ Loss</button>
         <button class="b" id="addT">+ Tie</button>
@@ -249,6 +269,7 @@ body.solo .brand{display:none}
     <h2>Output</h2>
     <div class="body">
       <label class="opt"><input type="checkbox" id="iClear"> Transparent background (OBS only)</label>
+      <label class="opt"><input type="checkbox" id="iPanels"> Draw a card behind each module</label>
       <div><p class="lab">OBS link shows</p>
         <select id="onlySel">
           <option value="">Everything that is switched on</option>
@@ -288,8 +309,9 @@ const DEF={
   ],
   barRemain:false,
   cd:{label:'Starting soon',min:10,done:'We are live',endsAt:0,
-      mode:'down',upStart:0,upAcc:0,running:false,goalH:0},
-  rec:{label:'Season record',hist:[],ties:false,dots:true},
+      mode:'down',upStart:0,upAcc:0,running:false,goalH:0,color:''},
+  rec:{label:'Season record',hist:[],ties:false,dots:true,win:'',loss:'',tie:''},
+  panels:true,
   on:{bars:true,cd:true,rec:true}
 };
 let S=JSON.parse(JSON.stringify(DEF));
@@ -511,6 +533,14 @@ function sync(){
   document.documentElement.classList.toggle('clear',S.clear);
   document.body.classList.toggle('live',S.live);
   document.body.classList.toggle('solo',!!S.only);
+  document.body.classList.toggle('bare',!S.panels);
+  // an exit control belongs only to a view you switched by hand
+  document.body.classList.toggle('toggled',VIEW.live===undefined);
+  const st=document.documentElement.style;
+  S.cd.color?st.setProperty('--cdc',S.cd.color):st.removeProperty('--cdc');
+  S.rec.win?st.setProperty('--recw',S.rec.win):st.removeProperty('--recw');
+  S.rec.loss?st.setProperty('--recl',S.rec.loss):st.removeProperty('--recl');
+  S.rec.tie?st.setProperty('--rect',S.rec.tie):st.removeProperty('--rect');
 
   $('#bName').textContent=S.brand||'Your Channel';
   $('#bTag').textContent=S.tag||'';
@@ -537,6 +567,11 @@ function sync(){
   $('#cdLab').value=S.cd.label;$('#cdMin').value=S.cd.min;$('#cdDone').value=S.cd.done;
   $('#cdGoalH').value=S.cd.goalH||0;$('#cdDone2').value=S.cd.done;
   $('#recLab').value=S.rec.label;$('#recShowTies').checked=S.rec.ties;$('#recShowDots').checked=S.rec.dots;
+  $('#iPanels').checked=S.panels;
+  $('#cdColor').value=S.cd.color||S.accent;
+  $('#recWin').value=S.rec.win||'#39d98a';
+  $('#recLoss').value=S.rec.loss||'#ff4d5e';
+  $('#recTie').value=S.rec.tie||'#9aa5b4';
   $('#onlySel').value=S.only||'';
   syncStatus();
   save();
@@ -578,6 +613,11 @@ $('#cdUpPause').onclick=()=>{
 };
 $('#cdUpReset').onclick=()=>{S.cd.upAcc=0;S.cd.upStart=0;S.cd.running=false;sync();};
 $('#recLab').oninput=e=>{S.rec.label=e.target.value;sync();};
+$('#iPanels').onchange=e=>{S.panels=e.target.checked;sync();};
+$('#cdColor').oninput=e=>{S.cd.color=e.target.value;sync();};
+$('#recWin').oninput=e=>{S.rec.win=e.target.value;sync();};
+$('#recLoss').oninput=e=>{S.rec.loss=e.target.value;sync();};
+$('#recTie').oninput=e=>{S.rec.tie=e.target.value;sync();};
 $('#recShowTies').onchange=e=>{S.rec.ties=e.target.checked;sync();};
 $('#recShowDots').onchange=e=>{S.rec.dots=e.target.checked;sync();};
 $('#addW').onclick=()=>addResult('w');
