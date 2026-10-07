@@ -339,6 +339,7 @@
         <h3 class="ov-h">Countdown</h3>
         <div class="ov-row">
           <input type="text" id="ovCdLabel" maxlength="30" placeholder="Label">
+          <input type="color" id="ovCdColor" class="sw" title="Digit colour">
         </div>
         <div class="ov-row">
           <select id="ovCdMode" style="flex:1">
@@ -368,6 +369,12 @@
 
         <h3 class="ov-h">Record</h3>
         <div class="ov-row"><input type="text" id="ovRecLabel" maxlength="30" placeholder="Label"></div>
+        <div class="ov-row">
+          <input type="color" id="ovRecWin" class="sw" title="Won">
+          <input type="color" id="ovRecLoss" class="sw" title="Lost">
+          <input type="color" id="ovRecTie" class="sw" title="Tied">
+          <label class="opt" style="flex:3"><input type="checkbox" id="ovPanels"> Card behind each module</label>
+        </div>
         <div class="ov-row">
           <button class="ghost" id="ovW">+ Win</button>
           <button class="ghost" id="ovL">+ Loss</button>
@@ -1477,8 +1484,9 @@ const OV_DEF={
   bars:[{id:1,label:'Sub goal',cur:0,goal:50,color:'#E62222'}],
   barRemain:false,
   cd:{label:'Starting soon',min:10,done:'We are live',endsAt:0,
-      mode:'down',upStart:0,upAcc:0,running:false,goalH:0},
-  rec:{label:'Season record',hist:[],ties:false,dots:true},
+      mode:'down',upStart:0,upAcc:0,running:false,goalH:0,color:''},
+  rec:{label:'Season record',hist:[],ties:false,dots:true,win:'',loss:'',tie:''},
+  panels:true,
   on:{bars:true,cd:true,rec:true},
   url:'overlay-kit.html',rev:0
 };
@@ -1585,6 +1593,11 @@ function ovRender(){
       :ms<=0?'Finished':'Running, '+Math.ceil(ms/60000)+' min left';
   }
   $('#ovRecLabel').value=OV.rec.label;
+  $('#ovCdColor').value=OV.cd.color||'#E62222';
+  $('#ovRecWin').value=OV.rec.win||'#39d98a';
+  $('#ovRecLoss').value=OV.rec.loss||'#ff4d5e';
+  $('#ovRecTie').value=OV.rec.tie||'#9aa5b4';
+  $('#ovPanels').checked=OV.panels!==false;
   const h=OV.rec.hist, w=h.filter(x=>x==='w').length, l=h.filter(x=>x==='l').length, t=h.filter(x=>x==='t').length;
   $('#ovRecState').textContent=h.length?(w+'-'+l+(t?'-'+t:'')):'No games yet';
   $('#ovUrl').value=OV.url||'overlay-kit.html';
@@ -1624,6 +1637,11 @@ function ovWire(){
   };
   $('#ovCdUpReset').onclick=()=>{OV.cd.upAcc=0;OV.cd.upStart=0;OV.cd.running=false;ovSave();};
   $('#ovRecLabel').oninput=e=>{OV.rec.label=e.target.value;ovSave(true);};
+  $('#ovCdColor').oninput=e=>{OV.cd.color=e.target.value;ovSave(true);};
+  $('#ovRecWin').oninput=e=>{OV.rec.win=e.target.value;ovSave(true);};
+  $('#ovRecLoss').oninput=e=>{OV.rec.loss=e.target.value;ovSave(true);};
+  $('#ovRecTie').oninput=e=>{OV.rec.tie=e.target.value;ovSave(true);};
+  $('#ovPanels').onchange=e=>{OV.panels=e.target.checked;ovSave();};
   $('#ovW').onclick=()=>{OV.rec.hist.push('w');ovSave();};
   $('#ovL').onclick=()=>{OV.rec.hist.push('l');ovSave();};
   $('#ovT').onclick=()=>{OV.rec.hist.push('t');OV.rec.ties=true;ovSave();};
