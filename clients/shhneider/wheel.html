@@ -1058,6 +1058,9 @@ function spin(){
 function runSpin(ev,broadcast){
   if(seenSpin===ev.id) return;
   seenSpin=ev.id;
+  // the previous result must come down first - otherwise the wheel turns
+  // behind it and the stream copy shows a stale verdict over a moving wheel
+  $('#reveal').classList.remove('show');
   if(broadcast) pushSpin(ev);
   const list=live(), n=ev.n;
   spinning=true; $('#spinBtn').disabled=true;
@@ -1413,7 +1416,7 @@ function wheelObsLink(){
    start time. Needs the files served from one hosted origin. */
 const W_KEY=SKEY+':sync';
 const W_CH=(()=>{try{return new BroadcastChannel(W_KEY);}catch(e){return null;}})();
-let seenSpin=null, wRev=0, wApplying=false;
+let seenSpin=null, wRev=0, wApplying=false, wLastClear=0, seenClear=0;
 
 function wSnapshot(){
   return {rev:wRev,mode:state.mode,themes:state.themes,custom:state.custom,
@@ -1423,13 +1426,16 @@ function wSnapshot(){
 function wPush(){
   if(wApplying) return;
   wRev++;
-  const pack={setup:wSnapshot(),spin:wLastSpin};
+  const pack={setup:wSnapshot(),spin:wLastSpin,clear:wLastClear};
   pack.setup.rev=wRev;
   try{localStorage.setItem(W_KEY,JSON.stringify(pack));}catch(e){}
-  try{ if(W_CH) W_CH.postMessage({rev:wRev,spin:wLastSpin}); }catch(e){}
+  try{ if(W_CH) W_CH.postMessage({rev:wRev,spin:wLastSpin,clear:wLastClear}); }catch(e){}
 }
 let wLastSpin=null;
 function pushSpin(ev){ wLastSpin=ev; wPush(); }
+/* Locking in or spinning again closes the card here; every other copy has to
+   be told, or the overlay keeps showing a result nobody is looking at. */
+function pushClear(){ wLastClear=Date.now(); wPush(); }
 
 function wApply(pack){
   if(!pack) return;
@@ -1447,6 +1453,10 @@ function wApply(pack){
     state.logs=readLogs(d);
     sync();
     wApplying=false;
+  }
+  if(pack.clear&&pack.clear>seenClear){
+    seenClear=pack.clear;
+    if(!spinning) $('#reveal').classList.remove('show');
   }
   const ev=pack.spin;
   if(ev&&ev.id!==seenSpin){
@@ -1683,7 +1693,7 @@ addEventListener('resize',()=>{ clearTimeout(layout._t); layout._t=setTimeout(la
 
 /* ============ wiring ============ */
 $('#spinBtn').onclick=spin;
-$('#againBtn').onclick=()=>{ $('#reveal').classList.remove('show'); setTimeout(spin,180); };
+$('#againBtn').onclick=()=>{ $('#reveal').classList.remove('show'); pushClear(); setTimeout(spin,180); };
 $('#lockBtn').onclick=()=>{
   if(current){
     const d=new Date();
@@ -1693,7 +1703,7 @@ $('#lockBtn').onclick=()=>{
     if(state.removeAfter) state.off.add(current.id);
   }
   $('#reveal').classList.remove('show');
-  current=null; sync();
+  current=null; sync(); pushClear();
 };
 
 $('#removeAfter').onchange=e=>{ state.removeAfter=e.target.checked; save(); };
