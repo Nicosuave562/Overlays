@@ -151,13 +151,13 @@
   .ball{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--cyan);
     box-shadow:0 0 20px -2px var(--cyan);transform:translate(-50%,-50%);top:0;left:50%}
   .buckets{position:absolute;left:0;right:0;bottom:0;display:flex;gap:3px}
-  .bucket{
+  .pk-bucket{
     flex:1 1 0;min-width:0;height:52px;display:grid;place-items:center;text-align:center;padding:0 3px;
     border:2px solid var(--line);border-top:0;border-radius:0 0 7px 7px;background:var(--panel);
     font-family:var(--cond);font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
     color:var(--dim);overflow:hidden;
   }
-  .bucket.hit{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 24px -6px var(--cyan)}
+  .pk-bucket.hit{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 24px -6px var(--cyan)}
 
   .groups{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:9px}
   .groups button{
@@ -1320,7 +1320,7 @@ function live(){
    Falls back to the artifact host's storage when running inside one. */
 /* Change BUILD_ID per channel so two builds on one host stay separate. */
 const BUILD_NAME='Shhneider';
-const BUILD_VERSION='2026.10.08.3';
+const BUILD_VERSION='2026.10.08.4';
 const BUILD_ID='shhneider';
 const SKEY='shwheel:'+BUILD_ID;
 const Store={
@@ -1796,7 +1796,7 @@ function runFx(ev){
     }
     const cells=[];
     for(let i=0;i<ev.n;i++){
-      const b=document.createElement('div'); b.className='bucket'; b.textContent=label(i);
+      const b=document.createElement('div'); b.className='pk-bucket'; b.textContent=label(i);
       buckets.appendChild(b); cells.push(b);
     }
     const startX=50, endX=((ev.idx+0.5)/ev.n)*100;
