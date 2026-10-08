@@ -1356,7 +1356,7 @@ const BUILD_NAME='Shhneider\u2019s';
 /* Header look: 'split' | 'solid' | 'gradient' | 'tail' | 'glow'
    Append ' upright' to any of them to drop the italic slant, e.g. 'gradient upright' */
 const HEADER_STYLE='gradient';
-const BUILD_VERSION='2026.10.08.12';
+const BUILD_VERSION='2026.10.08.13';
 const BUILD_ID='shhneider';
 const SKEY='shwheel:'+BUILD_ID;
 const Store={
@@ -1667,17 +1667,20 @@ function renderPicker(){
 
 /* Elimination pacing: quick while the field is large, slowing hard at the end.
    The last two sit for over two seconds, which is where the tension is. */
-function elimGap(left){
-  if(left>12) return 190;
-  if(left>8)  return 330;
-  if(left>5)  return 560;
-  if(left>3)  return 920;
-  if(left>2)  return 1500;
-  return 2300;
-}
+/* Four gears. The bulk phase shares a fixed time budget, so thinning 30 names
+   takes about as long as thinning 10 - only the per-removal gap changes. The
+   last three removals are fixed and slow, because that is where the tension is. */
+const ELIM={bulkBudget:8000, bulkMin:270, bulkMax:1150,
+            fiveFour:1400, three:2100, final:3400, lead:900, hold:1400};
 function elimSchedule(n){
-  const out=[]; let t=700;
-  for(let i=0;i<n-1;i++){ t+=elimGap(n-i); out.push(t); }
+  const bulk=Math.max(0,n-5);
+  const bulkGap=bulk?Math.max(ELIM.bulkMin,Math.min(ELIM.bulkMax,ELIM.bulkBudget/bulk)):0;
+  const out=[]; let t=ELIM.lead;
+  for(let i=0;i<n-1;i++){
+    const left=n-i;
+    t+= left>5 ? bulkGap : left>3 ? ELIM.fiveFour : left>2 ? ELIM.three : ELIM.final;
+    out.push(t);
+  }
   return out;
 }
 
@@ -1736,7 +1739,7 @@ function spin(){
     for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
     ev.order=order;
     ev.at=elimSchedule(n);
-    ev.dur=(ev.at[ev.at.length-1]||0)+1100;
+    ev.dur=(ev.at[ev.at.length-1]||0)+ELIM.hold;
     if(reduced){ ev.at=ev.at.map((_,i)=>60*(i+1)); ev.dur=60*ev.at.length+300; }
   }
   runSpin(ev,true);
