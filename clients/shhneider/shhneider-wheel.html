@@ -171,6 +171,7 @@
   .groups button.always{color:var(--dim);opacity:.85}
   .groups button.always[aria-pressed="true"]{color:var(--cyan);opacity:1}
   body.stream .groups{display:none}
+  .stage-meta .ver{opacity:.55}
   .pick-lead{margin:12px 0 6px;text-align:center;font-family:var(--cond);font-size:10.5px;
     letter-spacing:.2em;text-transform:uppercase;color:var(--dim);opacity:.75}
   body.stream .pick-lead{display:none}
@@ -406,6 +407,7 @@
         <span><b id="count">0</b> <span id="countNoun">punishments live</span></span>
         <span>Press <b>Space</b> to spin</span>
         <span>Press <b>H</b> for stream mode</span>
+        <span class="ver">build <b id="verStamp"></b></span>
       </p>
     </div>
   </section>
@@ -1318,6 +1320,7 @@ function live(){
    Falls back to the artifact host's storage when running inside one. */
 /* Change BUILD_ID per channel so two builds on one host stay separate. */
 const BUILD_NAME='Shhneider';
+const BUILD_VERSION='2026.10.08.3';
 const BUILD_ID='shhneider';
 const SKEY='shwheel:'+BUILD_ID;
 const Store={
@@ -2117,6 +2120,7 @@ function sync(){
     :rk!=='wheel'?RENDERERS[rk].verb
     :'Spin for a '+noun;
   ensureMode();
+  const vs=$('#verStamp'); if(vs) vs.textContent=BUILD_VERSION;
   renderModes();
   renderPicker();
   renderBuildPick();
