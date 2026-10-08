@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shhneider Marathon Wheel</title>
+<title>Shhneider Overlay Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1352,11 +1352,11 @@ function live(){
 /* Browser storage first, so a downloaded copy keeps its setup on any machine.
    Falls back to the artifact host's storage when running inside one. */
 /* Change BUILD_ID per channel so two builds on one host stay separate. */
-const BUILD_NAME='Shhneider';
+const BUILD_NAME='Shhneider\u2019s';
 /* Header look: 'split' | 'solid' | 'gradient' | 'tail' | 'glow'
    Append ' upright' to any of them to drop the italic slant, e.g. 'gradient upright' */
 const HEADER_STYLE='gradient';
-const BUILD_VERSION='2026.10.08.9';
+const BUILD_VERSION='2026.10.08.12';
 const BUILD_ID='shhneider';
 const SKEY='shwheel:'+BUILD_ID;
 const Store={
@@ -1951,7 +1951,7 @@ function saveImage(){
   o.drawImage(canvas,0,0);
   o.fillStyle='#29E6FF'; o.textAlign='center';
   o.font=Math.round(44*kk)+"px Anton, 'Arial Narrow', sans-serif";
-  o.fillText(((BUILD_NAME||'Stream')+' wheel').toUpperCase(),S/2,S+Math.round(56*kk));
+  o.fillText(((BUILD_NAME||'Stream')+' overlay hub').toUpperCase(),S/2,S+Math.round(56*kk));
   off.toBlob(b=>{ if(b){ download(b,'shhneider-wheel.png'); note('Image saved'); } });
 }
 
