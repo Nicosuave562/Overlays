@@ -66,25 +66,34 @@
   .modes button[aria-pressed="true"]{background:var(--cyan);color:#0B0B0B}
   main{display:grid;grid-template-columns:minmax(260px,336px) minmax(0,1fr) 372px;gap:24px;padding:16px 30px 24px;align-items:start}
   .side-col{display:flex;flex-direction:column;gap:16px;min-width:0}
-  .legend-col{background:var(--panel);border:2px solid var(--line);border-radius:6px;overflow:hidden}
+  /* no cap and no clipping: the list shows every entry, however long */
+  .legend-col{background:var(--panel);border:2px solid var(--line);border-radius:6px}
   .legend-col > h2{
     margin:0;padding:13px 16px;font-family:var(--display);font-size:15px;letter-spacing:.22em;
     text-transform:uppercase;background:var(--panel-2);border-bottom:2px solid var(--line);color:var(--cyan);
   }
-  .legend{padding:14px;columns:2;column-gap:16px}
-  .bucket{break-inside:avoid;margin:0 0 13px;border-left:3px solid var(--c);padding-left:9px}
-  .bucket-head{
+  .legend{
+    padding:14px;display:grid;gap:14px 16px;align-items:start;
+    grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
+  }
+  /* Scoped under .legend and reset explicitly, so no other rule in the file -
+     now or later - can give these a height or hide their overflow again. */
+  .legend .bucket{
+    margin:0;border:0;border-left:3px solid var(--c);border-radius:0;padding:0 0 0 9px;
+    min-width:0;height:auto;max-height:none;overflow:visible;display:block;background:none;
+  }
+  .legend .bucket-head{
     display:flex;align-items:baseline;gap:6px;margin-bottom:5px;
     font-family:var(--cond);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--c);
   }
-  .bucket-head em{font-style:normal;color:var(--dim);font-size:10.5px;letter-spacing:.06em}
-  .bucket ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
-  .bucket li{
+  .legend .bucket-head em{font-style:normal;color:var(--dim);font-size:10.5px;letter-spacing:.06em}
+  .legend .bucket ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;height:auto;max-height:none;overflow:visible}
+  .legend .bucket li{
     font-size:12px;line-height:1.32;color:#C9C6DC;padding:2px 5px;border-radius:3px;
     border-left:2px solid transparent;transition:background .2s,color .2s;
   }
-  .bucket li.hit{background:var(--c);color:#08080C;font-weight:600}
-  .bucket li.served{color:var(--dim);text-decoration:line-through;text-decoration-thickness:1px}
+  .legend .bucket li.hit{background:var(--c);color:#08080C;font-weight:600}
+  .legend .bucket li.served{color:var(--dim);text-decoration:line-through;text-decoration-thickness:1px}
   .legend-empty{padding:16px;font-size:13px;color:var(--dim);line-height:1.45;margin:0}
   .legend-foot{
     padding:0 16px 14px;font-family:var(--cond);font-size:11px;letter-spacing:.14em;
@@ -147,13 +156,13 @@
   .ball{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--cyan);
     box-shadow:0 0 20px -2px var(--cyan);transform:translate(-50%,-50%);top:0;left:50%}
   .buckets{position:absolute;left:0;right:0;bottom:0;display:flex;gap:3px}
-  .bucket{
+  .pk-bucket{
     flex:1 1 0;min-width:0;height:52px;display:grid;place-items:center;text-align:center;padding:0 3px;
     border:2px solid var(--line);border-top:0;border-radius:0 0 7px 7px;background:var(--panel);
     font-family:var(--cond);font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
     color:var(--dim);overflow:hidden;
   }
-  .bucket.hit{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 24px -6px var(--cyan)}
+  .pk-bucket.hit{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 24px -6px var(--cyan)}
 
   .groups{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:9px}
   .groups button{
@@ -167,6 +176,7 @@
   .groups button.always{color:var(--dim);opacity:.85}
   .groups button.always[aria-pressed="true"]{color:var(--cyan);opacity:1}
   body.stream .groups{display:none}
+  .stage-meta .ver{opacity:.55}
   .pick-lead{margin:12px 0 6px;text-align:center;font-family:var(--cond);font-size:10.5px;
     letter-spacing:.2em;text-transform:uppercase;color:var(--dim);opacity:.75}
   body.stream .pick-lead{display:none}
@@ -346,9 +356,9 @@
     body.stream .wheel-wrap{width:min(88vw,560px)}
     header{padding:18px 16px 14px}
     .wheel-wrap{width:min(92vw,560px)}
-    .legend{columns:2}
+    .legend{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
   }
-  @media (max-width:520px){.legend{columns:1}}
+  @media (max-width:520px){.legend{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}}
   @media (prefers-reduced-motion:reduce){.reveal-card,.grin,.reveal.show{animation:none}}
   :focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 </style>
@@ -402,6 +412,7 @@
         <span><b id="count">0</b> <span id="countNoun">punishments live</span></span>
         <span>Press <b>Space</b> to spin</span>
         <span>Press <b>H</b> for stream mode</span>
+        <span class="ver">build <b id="verStamp"></b></span>
       </p>
     </div>
   </section>
@@ -1316,6 +1327,7 @@ function live(){
    Falls back to the artifact host's storage when running inside one. */
 /* Change BUILD_ID per channel so two builds on one host stay separate. */
 const BUILD_NAME='NicoSuave562';
+const BUILD_VERSION='2026.10.08.5';
 const BUILD_ID='nicosuave562';
 const SKEY='shwheel:'+BUILD_ID;
 const Store={
@@ -1792,7 +1804,7 @@ function runFx(ev){
     }
     const cells=[];
     for(let i=0;i<ev.n;i++){
-      const b=document.createElement('div'); b.className='bucket'; b.textContent=label(i);
+      const b=document.createElement('div'); b.className='pk-bucket'; b.textContent=label(i);
       buckets.appendChild(b); cells.push(b);
     }
     const startX=50, endX=((ev.idx+0.5)/ev.n)*100;
@@ -2116,6 +2128,7 @@ function sync(){
     :rk!=='wheel'?RENDERERS[rk].verb
     :'Spin for a '+noun;
   ensureMode();
+  const vs=$('#verStamp'); if(vs) vs.textContent=BUILD_VERSION;
   renderModes();
   renderPicker();
   renderBuildPick();
